@@ -17,7 +17,27 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+
+    "docker:build": "docker compose -p woorkroom_be build",
+    "docker:rebuild": "docker compose -p woorkroom_be build --no-cache",
+    "docker:up": "docker compose -p woorkroom_be up -d",
+    "docker:up:build": "docker compose -p woorkroom_be up -d --build",
+    "docker:down": "docker compose -p woorkroom_be down",
+    "docker:down:vol": "docker compose -p woorkroom_be down -v",
+    "docker:ps": "docker compose -p woorkroom_be ps",
+    "docker:logs": "docker compose -p woorkroom_be logs -f api",
+    "docker:logs:all": "docker compose -p woorkroom_be logs -f",
+    "docker:restart": "docker compose -p woorkroom_be restart api",
+    "docker:sh:api": "docker compose -p woorkroom_be exec api sh",
+    "docker:sh:pg": "docker compose -p woorkroom_be exec postgres sh",
+
+    "prisma:migrate:init": "docker compose -p woorkroom_be run --rm --no-deps -v \"$(pwd)/prisma:/app/prisma\" api sh -lc 'npx prisma migrate dev -n init --skip-generate'",
+    "prisma:migrate:new": "docker compose -p woorkroom_be run --rm --no-deps -v \"$(pwd)/prisma:/app/prisma\" api sh -lc 'npx prisma migrate dev -n ${npm_config_name:-change} --skip-generate'",
+    "prisma:deploy": "docker compose -p woorkroom_be run --rm --no-deps api sh -lc 'npx prisma migrate deploy --schema=prisma/schema.prisma'",
+    "prisma:generate": "docker compose -p woorkroom_be run --rm --no-deps api sh -lc 'npx prisma generate'",
+    "prisma:studio": "docker compose -p woorkroom_be run --rm --no-deps -p 5555:5555 api sh -lc 'npx prisma studio --port 5555 --browser none'",
+    "db:psql": "docker compose -p woorkroom_be exec -it postgres psql -U postgres -d woorkroom"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",

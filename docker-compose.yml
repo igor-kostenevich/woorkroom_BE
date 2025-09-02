@@ -1,0 +1,96 @@
+services:
+  s3-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minio} ${MINIO_ROOT_PASSWORD:-miniosecret} &&
+      mc mb --ignore-existing local/${S3_BUCKET:-crm-files} &&
+      mc anonymous set private local/${S3_BUCKET:-crm-files} &&
+      echo 'S3 bucket ready'
+      "
+    environment:
+      S3_BUCKET: ${S3_BUCKET:-crm-files}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret}
+    restart: "no"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: ./.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -lc '
+        if [ -d prisma/migrations ] && [ "$(ls -A prisma/migrations)" ]; then
+          npx prisma migrate deploy --schema=prisma/schema.prisma;
+        else
+          echo "No migrations found, skipping deploy";
+        fi
+      '
+    restart: "no"
+
+  api:
+    build:
+      context: .
+    env_file: ./.env
+    ports:
+      - "3010:3010"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      s3-init:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: woorkroom
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d woorkroom"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - woorkroom_be_pg:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-bookworm
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9101"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: miniosecret
+    ports:
+      - "9100:9000"
+      - "9101:9101"
+    volumes:
+      - woorkroom_be_minio:/data
+    restart: unless-stopped
+
+volumes:
+  woorkroom_be_pg: {}
+  woorkroom_be_minio: {}
