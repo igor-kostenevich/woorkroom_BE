@@ -1,99 +1,100 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Woorkroom — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS + Prisma + PostgreSQL + Redis + MinIO (S3-compatible).  
+API runs on **http://localhost:3010**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> **Note:** Do **not** run both `api` (prod) and `api-dev` (dev) on the same port (3010).
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Requirements
 
-## Project setup
+- Docker Desktop (or Docker Engine)
+- Free ports: **3010** (API), **9100/9101** (MinIO), **5555** (Prisma Studio on demand)
 
-```bash
-$ npm install
-```
+---
 
-## Compile and run the project
+## Setup
+
+1. **Create env file**  
+   - Copy **`.env.example` → `.env`** and fill in your values.  
+   - Keep `.env` out of version control.  
+   - The app reads all configuration from `.env` (DB URL, Redis URL, S3/MinIO, JWT, CORS, etc).
+
+2. **Install dependencies (optional, only if running locally outside Docker)**  
+   ```bash
+   npm install
+
+
+## Development (hot reload via Docker)
 
 ```bash
-# development
-$ npm run start
+# Start dev API (hot reload) + infra (Postgres/Redis/MinIO)
+npm run dev:up
 
-# watch mode
-$ npm run start:dev
+# Tail dev API logs (you should see "File change detected..." on edits)
+npm run dev:logs
 
-# production mode
-$ npm run start:prod
-```
+# Create & apply a dev migration (rename "init" to what you did)
+npm run prisma:migrate:dev --name=init
 
-## Run tests
+# Prisma Studio → http://localhost:5555
+npm run prisma:studio:dev
 
-```bash
-# unit tests
-$ npm run test
+# Stop dev API (infra remains if started separately)
+npm run dev:down
 
-# e2e tests
-$ npm run test:e2e
+## Dev URLs
 
-# test coverage
-$ npm run test:cov
-```
+- **API base:** http://localhost:3010/api  
+- **Swagger (if enabled):** http://localhost:3010/api/docs  
+- **MinIO Console:** http://localhost:9101  
+- **S3 endpoint (for code):** http://localhost:9100
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Production (local/server via Docker)
 
 ```bash
-$ npm install -g mau
-$ mau deploy
-```
+# Build images and bring up the full stack (API + infra)
+npm run prod:up:build
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+# Apply DB migrations in prod/CI
+npm run prisma:deploy
 
-## Resources
+# Tail prod API logs
+npm run prod:logs
 
-Check out a few resources that may come in handy when working with NestJS:
+# Stop the stack (keeps volumes/data)
+npm run prod:down
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# Stop and remove volumes (Postgres/MinIO data) — irreversible
+npm run prod:down:vol
 
-## Support
+## Infra utilities
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+# List running containers in this stack
+npm run infra:ps
 
-## Stay in touch
+# Tail logs for all services
+npm run infra:logs
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# Open psql inside the Postgres container
+npm run infra:psql
 
-## License
+## Notes
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **Profiles:** Dev uses the `api-dev` service (hot reload). Prod uses `api`.
+- **Persistence:** Postgres and MinIO data are stored in Docker volumes; use `prod:down:vol` only if you intend to wipe data.
+- **Uploads:** Store files in MinIO (S3-compatible). Prefer presigned URLs from the backend for direct-to-S3 uploads from the client.
+
+---
+
+## Tech Stack
+
+- **NestJS** (HTTP API, WebSockets)
+- **Prisma + PostgreSQL** (database)
+- **Redis** (pub/sub, queues, Socket.IO adapter)
+- **MinIO (S3-compatible)** (file storage)
+- **Swagger** (API docs, optional)
