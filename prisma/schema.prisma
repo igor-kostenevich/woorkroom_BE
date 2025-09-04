@@ -21,6 +21,7 @@ model User {
   lastName   String?
   phone     String?
   address   String?
+  avatar    Json?
   role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

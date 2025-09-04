@@ -10,6 +10,7 @@ CREATE TABLE "public"."User" (
     "lastName" TEXT,
     "phone" TEXT,
     "address" TEXT,
+    "avatar" JSONB,
     "role" "public"."Role" NOT NULL DEFAULT 'USER',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
