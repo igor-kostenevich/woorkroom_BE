@@ -37,15 +37,18 @@
     "dev:sh": "docker compose -p woorkroom_be --profile dev exec api-dev sh",
     "dev:restart": "docker compose -p woorkroom_be --profile dev restart api-dev",
     "prisma:migrate:dev": "docker compose -p woorkroom_be --profile dev exec -T api-dev sh -lc 'npx prisma migrate dev -n ${npm_config_name:-change}'",
+    "prisma:generate:dev": "docker compose -p woorkroom_be --profile dev exec -T api-dev sh -lc 'npx prisma generate --schema=prisma/schema.prisma'",
     "prisma:studio:dev": "docker compose -p woorkroom_be --profile dev run --rm -p 5555:5555 api-dev sh -lc 'npx prisma studio --port 5555 --browser none'",
     "infra:psql": "docker compose -p woorkroom_be exec -it postgres psql -U postgres -d woorkroom",
     "infra:ps": "docker compose -p woorkroom_be ps",
-    "infra:logs": "docker compose -p woorkroom_be logs -f"
+    "infra:logs": "docker compose -p woorkroom_be logs -f",
+    "postinstall": "prisma generate --schema=prisma/schema.prisma"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",
     "@aws-sdk/s3-presigned-post": "^3.879.0",
     "@aws-sdk/s3-request-presigner": "^3.879.0",
+    "@nestjs-modules/ioredis": "^2.0.2",
     "@nestjs/bullmq": "^11.0.3",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -66,11 +69,13 @@
     "cookie-parser": "^1.4.7",
     "helmet": "^8.1.0",
     "ioredis": "^5.7.0",
+    "libphonenumber-js": "^1.12.15",
     "nestjs-pino": "^4.4.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "twilio": "^5.9.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

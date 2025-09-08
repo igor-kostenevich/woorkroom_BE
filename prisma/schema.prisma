@@ -22,7 +22,12 @@ model User {
   phone     String?
   address   String?
   avatar    Json?
+  onboarding       Json?
+  company          Json?
+  invitesDraft     Json?
   role      Role     @default(USER)
+  phoneVerified    Boolean  @default(false)
+  phoneVerifiedAt  DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './storage/storage.module';
+import { AuthModule } from './auth/auth.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -12,7 +14,9 @@ import { StorageModule } from './storage/storage.module';
       cache: true,
     }),
     PrismaModule,
+    RedisModule,
     StorageModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

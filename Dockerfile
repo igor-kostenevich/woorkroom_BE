@@ -7,15 +7,15 @@
   ENV CHOKIDAR_USEPOLLING=1
   ENV WATCHPACK_POLLING=true
   ENV TS_NODE_TRANSPILE_ONLY=1
+  ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
   
   RUN apt-get update \
     && apt-get install -y --no-install-recommends openssl ca-certificates procps \
     && rm -rf /var/lib/apt/lists/*
   
   COPY package*.json ./
-  RUN npm ci
-  
   COPY prisma ./prisma
+  RUN npm ci
   RUN npx prisma generate
   
   COPY . .
@@ -28,15 +28,15 @@
   FROM node:20-bookworm-slim AS builder
   WORKDIR /app
   ENV NODE_ENV=production
+  ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
   
   RUN apt-get update \
     && apt-get install -y --no-install-recommends openssl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
   
   COPY package*.json ./
-  RUN npm ci
-  
   COPY prisma ./prisma
+  RUN npm ci
   RUN npx prisma generate
   
   COPY tsconfig*.json nest-cli.json ./
@@ -55,11 +55,13 @@
     && rm -rf /var/lib/apt/lists/*
   
   COPY package*.json ./
-  RUN npm ci --omit=dev && npm cache clean --force
   
-  COPY --from=builder /app/node_modules/.prisma /app/node_modules/.prisma
+  COPY --from=builder /app/node_modules /app/node_modules
+  
   COPY prisma ./prisma
   COPY --from=builder /app/dist /app/dist
+  
+  RUN npm prune --omit=dev && npm cache clean --force
   
   RUN chown -R node:node /app
   USER node
