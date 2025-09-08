@@ -9,10 +9,16 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { hash, verify } from 'argon2'
 import { LoginRequest } from './dto/login.dto';
-import type { Response, Request } from 'express'
+import type { Response, Request } from 'express';
+import type { Multer } from 'multer';
 import type { Prisma, User } from '@prisma/client';
 import { UpdateProfileRequest } from './dto/updateProfile.dto';
 import { SessionService } from './session/session.service';
+import { StorageService } from 'src/storage/storage.service';
+import { toPublicRef } from './../utils/to-public-ref.util';
+import { FileRef } from 'src/storage/common/file-ref';
+
+const ALLOWED = /^(image\/jpeg|image\/png|image\/webp|image\/gif)$/;
 
 @Injectable()
 export class AuthService {
@@ -25,6 +31,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     private readonly sessions: SessionService,
+    private readonly storage: StorageService,
   ) {
     this.JWT_ACCESS_TOKEN_TTL = this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_TTL')
     this.JWT_REFRESH_TOKEN_TTL = this.configService.getOrThrow<string>('JWT_REFRESH_TOKEN_TTL')
@@ -138,26 +145,37 @@ export class AuthService {
     return true
   }
 
-  async getProfile(user: User): Promise<UserProfileResponse> {
-    const profile = await this.prismaService.user.findUnique({
+  async getProfile(user: User) {
+    const p = await this.prismaService.user.findUnique({
       where: { id: user.id },
       select: {
-        id: true, 
-        email: true, 
-        firstName: true, 
-        lastName: true,
-        phone: true, 
-        address: true, 
-        role: true,
-        avatar: true,
-        phoneVerified: true,
-        phoneVerifiedAt: true,
-        createdAt: true, 
-        updatedAt: true
+        id: true, email: true, firstName: true, lastName: true,
+        phone: true, address: true, role: true,
+        avatar: true, createdAt: true, updatedAt: true,
       },
     });
-    if (!profile) throw new NotFoundException('User not found');
-    return plainToInstance(UserProfileResponse, profile);
+    if (!p) throw new NotFoundException('User not found');
+  
+    let ref = p.avatar as FileRef | null;
+    if (ref && !ref.public) {
+      ref = await this.storage.refreshUrl(ref, 300);
+    }
+  
+    const avatar = toPublicRef(ref);
+  
+    return {
+      id: p.id,
+      email: p.email,
+      firstName: p.firstName,
+      lastName: p.lastName ?? '',
+      fullName: `${p.firstName} ${p.lastName || ''}`.trim(),
+      phone: p.phone,
+      address: p.address,
+      role: p.role,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      avatar,
+    };
   }
 
   async updateProfile(user: User, dto: UpdateProfileRequest): Promise<UserProfileResponse> {
@@ -207,6 +225,37 @@ export class AuthService {
     const user = await this.prismaService.user.findUnique({ where: { id }, select: { id: true } })
     if(!user) throw new NotFoundException('User not found')
     return user
+  }
+
+  async setAvatar(user: User, file: Express.Multer.File): Promise<UserProfileResponse> {
+    if (!file) throw new BadRequestException('File is required');
+    if (!ALLOWED.test(file.mimetype)) {
+      throw new BadRequestException('Only jpeg/png/webp/gif allowed');
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new BadRequestException('Max file size is 5MB');
+    }
+  
+    const ref = await this.storage.uploadAndMakeRef({
+      buffer: file.buffer,
+      mime: file.mimetype,
+      originalName: file.originalname,
+      prefix: `avatars/${user.id}`,
+      public: true,
+      signedTtlSec: 300,
+    });
+    
+    const updated = await this.prismaService.user.update({
+      where: { id: user.id },
+      data: { avatar: ref as unknown as Prisma.InputJsonValue },
+      select: {
+        id: true, email: true, firstName: true, lastName: true,
+        phone: true, address: true, role: true,
+        avatar: true, createdAt: true, updatedAt: true,
+      },
+    });
+  
+    return plainToInstance(UserProfileResponse, updated);
   }
 
   // -------------------- helpers --------------------

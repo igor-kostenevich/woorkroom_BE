@@ -8,3 +8,11 @@ export type FileRef = {
   public?: boolean;
   uploadedAt: string;
 };
+
+export type PublicFileRef = {
+  url: string;
+  mime?: string;
+  size?: number;
+  name?: string;
+  uploadedAt: string;
+};

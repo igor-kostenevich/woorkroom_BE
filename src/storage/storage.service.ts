@@ -12,14 +12,17 @@ import { FileRef } from './common/file-ref';
 @Injectable()
 export class StorageService {
   private readonly s3: S3Client;
+  private readonly signer: S3Client;
   private readonly bucket: string;
   private readonly endpoint: string;
+  private readonly publicEndpoint: string;
   private readonly region: string;
 
   constructor(private readonly config: ConfigService) {
-    this.bucket   = this.config.get<string>('S3_BUCKET', 'crm-files');
+    this.bucket = this.config.get<string>('S3_BUCKET', 'crm-files');
     this.endpoint = this.config.get<string>('S3_ENDPOINT', 'http://minio:9000');
-    this.region   = this.config.get<string>('S3_REGION') || 'us-east-1';
+    this.publicEndpoint = this.config.get<string>('S3_PUBLIC_ENDPOINT') ?? this.endpoint;
+    this.region = this.config.get<string>('S3_REGION') || 'us-east-1';
 
     const accessKeyId = this.config.get<string>('S3_ACCESS_KEY');
     const secretAccessKey = this.config.get<string>('S3_SECRET_KEY');
@@ -34,6 +37,13 @@ export class StorageService {
       forcePathStyle: true,
       credentials: { accessKeyId, secretAccessKey },
     });
+
+    this.signer = new S3Client({
+      region: this.region,
+      endpoint: this.publicEndpoint,
+      forcePathStyle: true,
+      credentials: { accessKeyId, secretAccessKey },
+    });
   }
 
   async uploadAndMakeRef(opts: {
@@ -43,7 +53,7 @@ export class StorageService {
     prefix: string;
     public?: boolean;
     signedTtlSec?: number;
-  }): Promise<FileRef> {
+  }): Promise<Partial<FileRef>> {
     const ext = (extname(opts.originalName) || '').toLowerCase();
     const key = `${opts.prefix}/${randomUUID()}${ext}`;
 
@@ -76,12 +86,12 @@ export class StorageService {
   }
 
   publicUrl(key: string) {
-    const base = this.endpoint.replace(/\/+$/, '');
+    const base = this.publicEndpoint.replace(/\/+$/, '');
     return `${base}/${this.bucket}/${encodeURI(key)}`;
   }
 
   async signGetUrl(key: string, expiresIn: number) {
     const cmd = new GetObjectCommand({ Bucket: this.bucket, Key: key });
-    return getSignedUrl(this.s3, cmd, { expiresIn });
+    return getSignedUrl(this.signer, cmd, { expiresIn });
   }
 }

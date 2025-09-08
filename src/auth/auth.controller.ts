@@ -1,9 +1,10 @@
 import { UpdateProfileRequest } from './dto/updateProfile.dto';
 import { AuthResponse } from './dto/auth.dto';
-import { Body, ClassSerializerInterceptor, Controller, Get, HttpCode, Patch, Post, Req, Res, UseInterceptors } from '@nestjs/common';
+import { Body, ClassSerializerInterceptor, Controller, Get, HttpCode, Patch, Post, Req, Res, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import { UserProfileResponse } from './dto/responses/profile.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Authorization } from './decorators/authorization.decorator';
-import { ApiOperation, ApiOkResponse, ApiConflictResponse, ApiBadRequestResponse, ApiNotFoundResponse, ApiUnauthorizedResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiOperation, ApiOkResponse, ApiConflictResponse, ApiBadRequestResponse, ApiNotFoundResponse, ApiUnauthorizedResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterRequest } from './dto/register.dto';
 import { LoginRequest } from './dto/login.dto';
@@ -12,6 +13,8 @@ import { Authorized } from './decorators/authorized.decorator';
 import { User } from '@prisma/client';
 import { OtpService } from './otp/otp.service';
 import { RequestOtpDto, VerifyOtpDto } from './otp/dto/otp.dto';
+import { memoryStorage } from 'multer';
+import type { Express } from 'express';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('auth')
@@ -102,5 +105,35 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   async updateProfile(@Authorized() user: User, @Body() dto: UpdateProfileRequest): Promise<UserProfileResponse> {
     return await this.authService.updateProfile(user, dto);
+  }
+
+  @Authorization()
+  @Post('profile/avatar')
+  @HttpCode(200)
+  @UseInterceptors(FileInterceptor('file', {
+    storage: memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }
+  }))
+  @ApiOperation({ summary: 'Upload user avatar' })
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  async uploadAvatar(
+    @Authorized() user: User,
+    @UploadedFile(new ParseFilePipe({
+      validators: [
+        new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+        new FileTypeValidator({ fileType: /image\/(jpeg|png|webp|gif)/ }),
+      ],
+    })) file: Express.Multer.File,
+  ) {
+    return this.authService.setAvatar(user, file);
   }
 }

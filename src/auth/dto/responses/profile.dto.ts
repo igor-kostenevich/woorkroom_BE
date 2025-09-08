@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
+import { PublicFileRef } from 'src/storage/common/file-ref';
+import { Role } from '@prisma/client'
 
 export class UserProfileResponse {
   @ApiProperty({ description: 'User ID (UUID)', example: '...' })
@@ -12,22 +14,25 @@ export class UserProfileResponse {
   firstName: string;
 
   @ApiProperty({ description: 'User last name', example: 'Doe' })
-  lastName: string;
+  lastName: string | null;
 
   @ApiProperty({ description: 'Phone number', example: '+1234567890', nullable: true })
   phone: string | null;
 
   @ApiProperty({ description: 'Address', example: '...' })
-  address: string;
+  address: string | null;
 
-  @ApiProperty({ description: 'Role', example: 'user', enum: ['user', 'admin'] })
-  role: 'user' | 'admin';
+  @ApiProperty({ description: 'Role', example: 'user', enum: Role})
+  role: Role;
 
-  @ApiProperty({ description: 'User full name', example: 'John Doe' })
+  @ApiProperty({ description: 'User full name', example: 'John Doe', readOnly: true })
   @Expose()
   get fullName(): string {
     return `${this.firstName} ${this.lastName ?? ''}`.trim()
   }
+
+  @ApiProperty({ description: 'User avatar', type: () => Object, nullable: true })
+  avatar?: PublicFileRef | null;
 
   @ApiProperty({ description: 'Created at', example: '2025-04-29T14:00:00.000Z' })
   createdAt: Date;

@@ -10,6 +10,7 @@ import { OtpService } from './otp/otp.service';
 import { SmsService } from './sms/sms.service';
 import { SessionService } from './session/session.service';
 import { RedisModule } from 'src/redis/redis.module';
+import { StorageModule } from 'src/storage/storage.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { RedisModule } from 'src/redis/redis.module';
       useFactory: getJwtConfig,
     }),
     RedisModule,
+    StorageModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, OtpService, SmsService, SessionService],
