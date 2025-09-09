@@ -13,13 +13,13 @@ export class UserProfileResponse {
   @ApiProperty({ description: 'User name', example: 'John' })
   firstName: string;
 
-  @ApiProperty({ description: 'User last name', example: 'Doe' })
+  @ApiProperty({ description: 'User last name', example: 'Doe', nullable: true })
   lastName: string | null;
 
   @ApiProperty({ description: 'Phone number', example: '+1234567890', nullable: true })
   phone: string | null;
 
-  @ApiProperty({ description: 'Address', example: '...' })
+  @ApiProperty({ description: 'Address', example: '...', nullable: true })
   address: string | null;
 
   @ApiProperty({ description: 'Role', example: 'user', enum: Role})
