@@ -13,6 +13,18 @@ enum Role {
   ADMIN
 }
 
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ProjectRole {
+  OWNER
+  MEMBER
+  VIEWER
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -30,4 +42,42 @@ model User {
   phoneVerifiedAt  DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  ownedProjects      Project[]       @relation("UserProjectsOwned")
+  projectMemberships ProjectMember[] @relation("UserProjectMemberships")
+}
+
+model Counter {
+  id    String @id
+  value Int    @default(0)
+}
+
+model Project {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  name        String
+  avatar      Json             @default("{}")
+  description String?
+  priority    ProjectPriority? @default(MEDIUM)
+  startDate   DateTime?
+  deadline    DateTime?
+  ownerId     String
+  members     ProjectMember[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  owner       User             @relation("UserProjectsOwned", fields: [ownerId], references: [id])
+}
+
+model ProjectMember {
+  projectId String
+  userId    String
+  role      ProjectRole @default(MEMBER)
+  createdAt DateTime    @default(now())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  user      User    @relation("UserProjectMemberships", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@index([userId])
 }

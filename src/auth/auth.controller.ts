@@ -3,13 +3,13 @@ import { AuthResponse } from './dto/auth.dto';
 import { Body, ClassSerializerInterceptor, Controller, Get, HttpCode, Patch, Post, Req, Res, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import { UserProfileResponse } from './dto/responses/profile.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Authorization } from './decorators/authorization.decorator';
 import { ApiOperation, ApiOkResponse, ApiConflictResponse, ApiBadRequestResponse, ApiNotFoundResponse, ApiUnauthorizedResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { Authorization } from '../common/decorators/authorization.decorator';
+import { Authorized } from '../common/decorators/authorized.decorator';
 import { AuthService } from './auth.service';
 import { RegisterRequest } from './dto/register.dto';
 import { LoginRequest } from './dto/login.dto';
 import type { Response, Request } from 'express'
-import { Authorized } from './decorators/authorized.decorator';
 import { User } from '@prisma/client';
 import { OtpService } from './otp/otp.service';
 import { RequestOtpDto, VerifyOtpDto } from './otp/dto/otp.dto';
