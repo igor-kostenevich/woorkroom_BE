@@ -1,6 +1,8 @@
+import { ProjectMemberDto } from './project-member.dto';
+import { ProjectUserBriefDto } from './project-user-brief.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectRole, ProjectPriority } from '@prisma/client';
-import { AvatarDto, PublicFileRefDto } from '../../../storage/common/public-file-ref.dto';
+import { AvatarDto } from '../../../storage/common/public-file-ref.dto';
 
 export class ProjectResponse {
   @ApiProperty({ example: 'f7c5b2f3-8a4b-4b9c-9f1a-1a2b3c4d5e6f' })
@@ -26,6 +28,12 @@ export class ProjectResponse {
 
   @ApiPropertyOptional({ type: () => AvatarDto, nullable: true, description: 'Project avatar' })
   avatar?: AvatarDto | null
+
+  @ApiProperty({ type: () => ProjectUserBriefDto })
+  owner!: ProjectUserBriefDto;
+
+  @ApiProperty({ type: () => [ProjectMemberDto] })
+  members!: ProjectMemberDto[];
 
   @ApiProperty({ type: Date })
   createdAt!: Date;

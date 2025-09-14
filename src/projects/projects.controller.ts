@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, UploadedFile, BadRequestException, ClassSerializerInterceptor } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
@@ -10,6 +10,7 @@ import { Authorized } from '../common/decorators/authorized.decorator';
 import { Authorization } from '../common/decorators/authorization.decorator';
 import { memoryStorage } from 'multer';
 
+@UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('Projects')
 @Authorization()
 @ApiBearerAuth()

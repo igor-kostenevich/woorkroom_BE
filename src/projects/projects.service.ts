@@ -2,15 +2,21 @@ import { PrismaService } from './../prisma/prisma.service';
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { plainToInstance } from 'class-transformer';
 import { User, $Enums, ProjectRole } from '@prisma/client';
 import { ProjectResponse } from './dto/response/project.response';
 import { StorageService } from 'src/storage/storage.service';
-import { PublicFileRef } from 'src/storage/common/file-ref';
+
+import { PROJECT_SELECT } from './selects';
+import { mapProjectRowToResponse } from './mappers/project.mapper';
+import { buildAvatarPayload } from './utils/avatar.util';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService, private readonly storage: StorageService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   private isAdmin(u: User) { return u.role === $Enums.Role.ADMIN; }
 
@@ -21,8 +27,7 @@ export class ProjectsService {
       create: { id: 'project', value: 1 },
       select: { value: true },
     });
-    const code = counter.value;
-    return 'PN' + String(code).padStart(6, '0');
+    return 'PN' + String(counter.value).padStart(6, '0');
   }
 
   async create(
@@ -30,30 +35,9 @@ export class ProjectsService {
     dto: CreateProjectDto,
     files: { avatarFile?: Express.Multer.File },
   ): Promise<ProjectResponse> {
-    let avatarPayload: Record<'name', string> | PublicFileRef;
+    const avatar = await buildAvatarPayload(this.storage, user.id, dto.avatar, files.avatarFile);
 
-    if (files.avatarFile) {
-      const file = files.avatarFile;
-      const ref = await this.storage.uploadAndMakeRef({
-        buffer: file.buffer,
-        mime: file.mimetype,
-        originalName: file.originalname,
-        prefix: `projects/${user.id}/avatars`,
-        public: true,
-      });
-
-      avatarPayload = {
-        url: ref.url!,
-        name: ref.name ?? 'file',
-        mime: ref.mime,
-        size: ref.size,
-        uploadedAt: ref.uploadedAt!,
-      };
-    } else {
-      avatarPayload = { name: dto.avatar!.trim() };
-    }
-
-    const project = await this.prisma.project.create({
+    const row = await this.prisma.project.create({
       data: {
         code: await this.nextProjectCode(),
         name: dto.name,
@@ -62,65 +46,42 @@ export class ProjectsService {
         startDate: dto.startDate ? new Date(dto.startDate) : null,
         deadline: dto.deadline ? new Date(dto.deadline) : null,
         ownerId: user.id,
-        avatar: avatarPayload,
+        avatar,
         members: { create: { userId: user.id, role: ProjectRole.OWNER } },
       },
-      select: {
-        id: true, code: true, name: true, description: true,
-        priority: true, startDate: true, deadline: true,
-        createdAt: true, updatedAt: true,
-        avatar: true,
-        ownerId: true,
-        members: { where: { userId: user.id }, select: { role: true } },
-      },
+      select: PROJECT_SELECT,
     });
 
-
-    const myRole = project.members[0]?.role ?? ProjectRole.OWNER;
-    const { members, ownerId, ...rest } = project;
-    return plainToInstance(ProjectResponse, { ...rest, myRole });
+    return plainToInstance(
+      ProjectResponse,
+      mapProjectRowToResponse(row, user.id, ProjectRole.OWNER),
+    );
   }
 
   async list(user: User): Promise<ProjectResponse[]> {
-    const items = await this.prisma.project.findMany({
+    const rows = await this.prisma.project.findMany({
       where: { members: { some: { userId: user.id } } },
       orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        description: true,
-        priority: true,
-        startDate: true,
-        deadline: true,
-        createdAt: true,
-        updatedAt: true,
-        avatar: true,
-        members: { where: { userId: user.id }, select: { role: true } },
-      },
+      select: PROJECT_SELECT,
     });
 
-    return items.map(project => {
-      const myRole = project.members[0]?.role ?? ProjectRole.VIEWER;
-      const { members, ...rest } = project;
-      return plainToInstance(ProjectResponse, { ...rest, myRole });
-    });
+    const mapped = rows.map(r => mapProjectRowToResponse(r, user.id, ProjectRole.VIEWER));
+    return plainToInstance(ProjectResponse, mapped);
   }
 
   async getOne(user: User, id: string): Promise<ProjectResponse> {
-    const project = await this.prisma.project.findUnique({
+    const row = await this.prisma.project.findUnique({
       where: { id },
-      include: { members: { where: { userId: user.id }, select: { role: true } } },
+      select: PROJECT_SELECT,
     });
-    if (!project) throw new NotFoundException('Project not found');
+    if (!row) throw new NotFoundException('Project not found');
 
-    const myRole = project.members[0]?.role;
-    if (!this.isAdmin(user) && !myRole) {
+    const resp = mapProjectRowToResponse(row, user.id, ProjectRole.VIEWER);
+    if (!this.isAdmin(user) && !resp.myRole) {
       throw new ForbiddenException('No access to this project');
     }
-
-    const { members, ownerId, ...rest } = project;
-    return plainToInstance(ProjectResponse, { ...rest, myRole: myRole ?? ProjectRole.VIEWER });
+    
+    return plainToInstance(ProjectResponse, resp);
   }
 
   async update(user: User, id: string, dto: UpdateProjectDto): Promise<ProjectResponse> {
@@ -128,29 +89,28 @@ export class ProjectsService {
       where: { projectId_userId: { projectId: id, userId: user.id } },
       select: { role: true },
     });
-
     if (!this.isAdmin(user) && membership?.role !== ProjectRole.OWNER) {
       throw new ForbiddenException('Only owner can update project');
     }
 
-    const updatedProject = await this.prisma.project.update({
+    const dataPatch: any = {
+      name: dto.name ?? undefined,
+      description: dto.description ?? undefined,
+      priority: (dto.priority as any) ?? undefined,
+      startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+      deadline: dto.deadline ? new Date(dto.deadline) : undefined,
+    };
+    if (dto.avatar) dataPatch.avatar = { name: dto.avatar.trim() };
+
+    const row = await this.prisma.project.update({
       where: { id },
-      data: {
-        name: dto.name ?? undefined,
-        description: dto.description ?? undefined,
-        priority: (dto.priority as any) ?? undefined,
-        avatar: dto.avatar ? { name: dto.avatar.trim() } : undefined,
-        startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-        deadline: dto.deadline ? new Date(dto.deadline) : undefined,
-      },
-      include: { members: { where: { userId: user.id }, select: { role: true } } },
+      data: dataPatch,
+      select: PROJECT_SELECT,
     });
 
-    const myRole = updatedProject.members[0]?.role ?? ProjectRole.OWNER;
-    const { members, ownerId, ...updated } = updatedProject;
-    return plainToInstance(ProjectResponse, {
-      ...updated,
-      myRole,
-    });
+    return plainToInstance(
+      ProjectResponse,
+      mapProjectRowToResponse(row, user.id, ProjectRole.OWNER),
+    );
   }
 }
