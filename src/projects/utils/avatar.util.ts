@@ -7,7 +7,7 @@ export async function buildAvatarPayload(
   storage: StorageService,
   userId: string,
   avatarPresetOrUndefined: string | undefined,
-  avatarFileOrUndefined: Express.Multer.File | undefined,
+  avatarFileOrUndefined: Express.Multer["File"] | undefined,
 ): Promise<AvatarPayload> {
   if (avatarFileOrUndefined) {
     const ref = await storage.uploadAndMakeRef({

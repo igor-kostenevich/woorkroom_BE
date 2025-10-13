@@ -132,7 +132,7 @@ export class AuthController {
         new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
         new FileTypeValidator({ fileType: /image\/(jpeg|png|webp|gif)/ }),
       ],
-    })) file: Express.Multer.File,
+    })) file: Express.Multer["File"],
   ) {
     return this.authService.setAvatar(user, file);
   }

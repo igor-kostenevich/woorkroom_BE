@@ -33,7 +33,7 @@ export class ProjectsService {
   async create(
     user: User,
     dto: CreateProjectDto,
-    files: { avatarFile?: Express.Multer.File },
+    files: { avatarFile?: Express.Multer["File"] },
   ): Promise<ProjectResponse> {
     const avatar = await buildAvatarPayload(this.storage, user.id, dto.avatar, files.avatarFile);
 

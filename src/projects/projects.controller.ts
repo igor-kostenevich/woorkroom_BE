@@ -65,7 +65,7 @@ export class ProjectsController {
         new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
         new FileTypeValidator({ fileType: /image\/(png|jpe?g|webp|gif)/ }),
       ],
-    })) avatarFile?: Express.Multer.File,
+    })) avatarFile?: Express.Multer["File"],
   ) {
     if (!avatarFile && !dto.avatar?.trim()) {
       throw new BadRequestException('avatar is required: provide a preset name or upload a file');

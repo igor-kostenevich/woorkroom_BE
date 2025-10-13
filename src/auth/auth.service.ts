@@ -227,7 +227,7 @@ export class AuthService {
     return user
   }
 
-  async setAvatar(user: User, file: Express.Multer.File): Promise<UserProfileResponse> {
+  async setAvatar(user: User, file: Express.Multer["File"]): Promise<UserProfileResponse> {
     if (!file) throw new BadRequestException('File is required');
     if (!ALLOWED.test(file.mimetype)) {
       throw new BadRequestException('Only jpeg/png/webp/gif allowed');
