@@ -24,17 +24,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: >
-      /bin/sh -c "if [ -d prisma/migrations ]; then
-        count=$(ls -A prisma/migrations | wc -l);
-        if [ $count -gt 0 ]; then
-          npx prisma migrate deploy --schema=prisma/schema.prisma;
+    command:
+      - /bin/sh
+      - -c
+      - |
+        if [ -d prisma/migrations ]; then
+          count=$$(ls -A prisma/migrations | wc -l);
+          if [ $$count -gt 0 ]; then
+            echo "Running Prisma migrations ($$count found)";
+            npx prisma migrate deploy --schema=prisma/schema.prisma;
+          else
+            echo "⚠️  No migrations found, skipping deploy";
+          fi;
         else
-          echo 'No migrations found, skipping deploy';
-        fi;
-      else
-        echo 'No migrations folder found, skipping deploy';
-      fi"
+          echo "⚠️ No prisma/migrations folder, skipping deploy";
+        fi
     restart: "no"
 
   api:
