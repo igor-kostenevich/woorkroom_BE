@@ -38,6 +38,7 @@
   COPY prisma ./prisma
   RUN npm ci
   RUN npm install -g @nestjs/cli
+  RUN npm install @types/express
   RUN npx prisma generate
   
   COPY tsconfig*.json nest-cli.json ./
