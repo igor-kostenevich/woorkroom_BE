@@ -72,6 +72,7 @@
     "libphonenumber-js": "^1.12.15",
     "multer": "^2.0.2",
     "nestjs-pino": "^4.4.0",
+    "node-telegram-bot-api": "^0.66.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",

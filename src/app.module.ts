@@ -7,6 +7,7 @@ import { StorageModule } from './storage/storage.module';
 import { AuthModule } from './auth/auth.module';
 import { RedisModule } from './redis/redis.module';
 import { ProjectsModule } from './projects/projects.module';
+import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ProjectsModule } from './projects/projects.module';
     StorageModule,
     AuthModule,
     ProjectsModule,
+    TelegramModule,
   ],
   controllers: [AppController],
   providers: [AppService],
