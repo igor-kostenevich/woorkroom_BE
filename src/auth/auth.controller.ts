@@ -15,6 +15,7 @@ import { OtpService } from './otp/otp.service';
 import { RequestOtpDto, VerifyOtpDto } from './otp/dto/otp.dto';
 import { memoryStorage } from 'multer';
 import type { Express } from 'express';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('auth')
@@ -84,11 +85,25 @@ export class AuthController {
     return await this.authService.logout(req, res)
   }
 
-  @ApiOperation({ summary: 'Forgot password (send new password via email)' })
+  @ApiOperation({
+    summary: 'Forgot password',
+    description: 'Sends a new temporary password to the provided email address.',
+  })
+  @ApiOkResponse({
+    description: 'New password has been sent to user email',
+    schema: {
+      example: {
+        success: true,
+        message: 'Password reset email sent successfully',
+      },
+    },
+  })
+  @ApiBadRequestResponse({ description: 'Invalid or missing email' })
+  @ApiNotFoundResponse({ description: 'User with this email not found' })
   @Post('forgot')
   @HttpCode(200)
-  async forgot(@Body('email') email: string) {
-    return this.authService.forgot(email);
+  async forgot(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgot(dto.email);
   }
 
   @Authorization()
