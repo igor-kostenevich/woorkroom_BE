@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { RedisModule } from './redis/redis.module';
 import { ProjectsModule } from './projects/projects.module';
 import { TelegramModule } from './telegram/telegram.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TelegramModule } from './telegram/telegram.module';
     AuthModule,
     ProjectsModule,
     TelegramModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

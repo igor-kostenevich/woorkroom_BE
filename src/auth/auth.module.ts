@@ -12,6 +12,7 @@ import { SessionService } from './session/session.service';
 import { RedisModule } from 'src/redis/redis.module';
 import { StorageModule } from 'src/storage/storage.module';
 import { TelegramModule } from 'src/telegram/telegram.module';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { TelegramModule } from 'src/telegram/telegram.module';
     RedisModule,
     StorageModule,
     TelegramModule,
+    MailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, OtpService, SmsService, SessionService],

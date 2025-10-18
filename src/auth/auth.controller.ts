@@ -84,6 +84,13 @@ export class AuthController {
     return await this.authService.logout(req, res)
   }
 
+  @ApiOperation({ summary: 'Forgot password (send new password via email)' })
+  @Post('forgot')
+  @HttpCode(200)
+  async forgot(@Body('email') email: string) {
+    return this.authService.forgot(email);
+  }
+
   @Authorization()
   @Get('profile')
   @HttpCode(200)

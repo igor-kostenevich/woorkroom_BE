@@ -17,6 +17,8 @@ import { SessionService } from './session/session.service';
 import { StorageService } from 'src/storage/storage.service';
 import { toPublicRef } from './../utils/to-public-ref.util';
 import { FileRef } from 'src/storage/common/file-ref';
+import { MailService } from 'src/mail/mail.service';
+import { randomInt } from 'crypto';
 
 const ALLOWED = /^(image\/jpeg|image\/png|image\/webp|image\/gif)$/;
 
@@ -32,6 +34,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly sessions: SessionService,
     private readonly storage: StorageService,
+    private readonly mailService: MailService,
   ) {
     this.JWT_ACCESS_TOKEN_TTL = this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_TTL')
     this.JWT_REFRESH_TOKEN_TTL = this.configService.getOrThrow<string>('JWT_REFRESH_TOKEN_TTL')
@@ -144,6 +147,25 @@ export class AuthService {
     this.setCookie(res, 'sid', '', new Date(0))
     return true
   }
+
+  async forgot(email: string) {
+    const user = await this.prismaService.user.findUnique({ where: { email } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const newPassword = randomInt(100000, 999999).toString();
+
+    const hashed = await hash(newPassword);
+
+    await this.prismaService.user.update({
+      where: { id: user.id },
+      data: { password: hashed },
+    });
+
+    await this.mailService.sendResetPassword(email, newPassword);
+
+    return { ok: true, message: 'New password has been sent to your email.' };
+  }
+
 
   async getProfile(user: User) {
     const p = await this.prismaService.user.findUnique({
