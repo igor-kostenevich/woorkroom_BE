@@ -17,7 +17,7 @@ export class MailService {
 
     try {
       await this.resend.emails.send({
-        from: 'Woorkroom <onboarding@resend.dev>',
+        from: 'Woorkroom <noreply@woorkroom.family-love-haven.com>',
         to: email,
         subject: 'Your Woorkroom password has been reset',
         html: `
