@@ -101,7 +101,7 @@ export class AuthService {
   }
 
   async login(req: Request, res: Response, dto: LoginRequest) {
-    const { email, password } = dto
+    const { email, password, rememberMe } = dto
 
     const user = await this.prismaService.user.findUnique({
       where: { email },
@@ -113,7 +113,7 @@ export class AuthService {
     const isPasswordValid = await verify(user.password, password)
     if (!isPasswordValid) throw new NotFoundException('Invalid credentials')
 
-    return this.auth(req, res, user.id)
+    return this.auth(req, res, user.id, rememberMe)
   }
 
   async refresh(req: Request, res: Response) {
@@ -165,7 +165,6 @@ export class AuthService {
 
     return { ok: true, message: 'New password has been sent to your email.' };
   }
-
 
   async getProfile(user: User) {
     const p = await this.prismaService.user.findUnique({
@@ -282,9 +281,12 @@ export class AuthService {
 
   // -------------------- helpers --------------------
 
-  private auth(req: Request, res: Response, id: string) {
+  private auth(req: Request, res: Response, id: string, rememberMe = false) {
     const { accessToken, refreshToken } = this.generateTokens(id)
-    const exp = new Date(Date.now() + this.refreshMs())
+
+    const exp = rememberMe
+    ? new Date(Date.now() + this.refreshMs())
+    : undefined
 
     const ua = req.headers['user-agent'] || undefined;
     const ip = (req.headers['x-forwarded-for'] as string) || req.ip;
@@ -311,7 +313,7 @@ export class AuthService {
     return parseInt(m[1], 10) * mult[m[2] as keyof typeof mult];
   }
 
-  private setCookie(res: Response, name: string, value: string, expires: Date) {
+  private setCookie(res: Response, name: string, value: string, expires: Date | undefined) {
     const prod = !isDev(this.configService);
     res.cookie(name, value, {
       httpOnly: true,
