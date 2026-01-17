@@ -314,12 +314,11 @@ export class AuthService {
   }
 
   private setCookie(res: Response, name: string, value: string, expires: Date | undefined) {
-    const prod = !isDev(this.configService);
     res.cookie(name, value, {
       httpOnly: true,
       domain: this.COOKIE_DOMAIN,
-      secure: prod,
-      sameSite: prod ? 'none' : 'lax',
+      secure: true,
+      sameSite: 'none',
       expires,
     })
   }
