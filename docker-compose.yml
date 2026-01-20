@@ -110,8 +110,6 @@ services:
 
   redis:
     image: redis:7-bookworm
-    ports:
-      - "6379:6379"
     command: ["redis-server", "--appendonly", "yes"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

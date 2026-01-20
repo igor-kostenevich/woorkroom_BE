@@ -9,6 +9,7 @@ import { RedisModule } from './redis/redis.module';
 import { ProjectsModule } from './projects/projects.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { MailModule } from './mail/mail.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { MailModule } from './mail/mail.module';
     ProjectsModule,
     TelegramModule,
     MailModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],
