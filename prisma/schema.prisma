@@ -13,6 +13,18 @@ enum Role {
   ADMIN
 }
 
+enum VacationType {
+  VACATION
+  SICK
+  REMOTE
+}
+
+enum VacationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum ProjectPriority {
   LOW
   MEDIUM
@@ -42,9 +54,16 @@ model User {
   phoneVerifiedAt  DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  
+  // my profile
+  position   String?
+  location   String?
+  birthday   DateTime?
+  currentCompany String?
+  telegram String?
   ownedProjects      Project[]       @relation("UserProjectsOwned")
   projectMemberships ProjectMember[] @relation("UserProjectMemberships")
+  vacationRequests VacationRequest[] @relation("UserVacationRequests")
 }
 
 model Counter {
@@ -79,5 +98,24 @@ model ProjectMember {
   user      User    @relation("UserProjectMemberships", fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([projectId, userId])
+  @@index([userId])
+}
+
+model VacationRequest {
+  id        String          @id @default(uuid())
+  userId    String
+  type      VacationType
+  status    VacationStatus @default(PENDING)
+
+  startDate DateTime
+  endDate   DateTime
+
+  durationDays Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation("UserVacationRequests", fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }

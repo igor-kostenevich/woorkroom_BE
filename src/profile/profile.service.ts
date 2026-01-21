@@ -125,4 +125,45 @@ export class ProfileService {
   
     return plainToInstance(UserProfileResponse, updated);
   }
+
+  async getTeam(userId: string) {
+    const memberships = await this.prismaService.projectMember.findMany({
+      where: {
+        project: {
+          members: {
+            some: { userId },
+          },
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            position: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+  
+    const map = new Map<string, any>();
+  
+    for (const member of memberships) {
+      map.set(member.user.id, member.user);
+    }
+  
+    return Array.from(map.values()).map(u => ({
+      id: u.id,
+      firstName: u.firstName,
+      lastName: u.lastName ?? '',
+      fullName: `${u.firstName} ${u.lastName || ''}`.trim(),
+      position: u.position ?? null,
+      avatar: toPublicRef(u.avatar),
+    }));
+  }
+  
+  
+
 }

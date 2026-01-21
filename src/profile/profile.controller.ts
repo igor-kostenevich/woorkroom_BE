@@ -9,6 +9,7 @@ import type { Express } from 'express';
 import { User } from '@prisma/client';
 import { UpdateProfileRequest } from './dto/updateProfile.dto';
 import { UserProfileResponse } from './dto/responses/profile.dto';
+import { ProfileTeamMemberResponse } from './dto/responses/profile-team.response';
 
 
 @UseInterceptors(ClassSerializerInterceptor)
@@ -67,5 +68,26 @@ export class ProfileController {
     })) file: Express.Multer["File"],
   ) {
     return this.profileService.setAvatar(user, file);
+  }
+
+  @Authorization()
+  @Get('team')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get current user team',
+    description:
+      'Returns users that participate in at least one project together with the current user.',
+  })
+  @ApiOkResponse({
+    description: 'List of team members',
+    type: ProfileTeamMemberResponse,
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  async getTeam(
+    @Authorized() user: User,
+  ): Promise<ProfileTeamMemberResponse[]> {
+    return this.profileService.getTeam(user.id);
   }
 }
