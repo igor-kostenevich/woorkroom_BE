@@ -27,7 +27,6 @@
   # ---------- builder ----------
   FROM node:20-bookworm-slim AS builder
   WORKDIR /app
-  ENV NODE_ENV=production
   ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
   
   RUN apt-get update \
@@ -37,9 +36,8 @@
   COPY package*.json ./
   COPY prisma ./prisma
   RUN npm ci
-  RUN npm install -g @nestjs/cli
-  RUN npm install @types/express
   RUN npx prisma generate
+  ENV NODE_ENV=production
   
   COPY tsconfig*.json nest-cli.json ./
   COPY src ./src
@@ -57,13 +55,11 @@
     && rm -rf /var/lib/apt/lists/*
   
   COPY package*.json ./
-  
-  COPY --from=builder /app/node_modules /app/node_modules
-  
   COPY prisma ./prisma
-  COPY --from=builder /app/dist /app/dist
+  RUN npm ci --omit=dev && npm cache clean --force
+  RUN npx prisma generate
   
-  RUN npm prune --omit=dev && npm cache clean --force
+  COPY --from=builder /app/dist /app/dist
   
   RUN chown -R node:node /app
   USER node
