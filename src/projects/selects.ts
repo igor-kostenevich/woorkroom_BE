@@ -17,5 +17,5 @@ export const PROJECT_SELECT = {
   updatedAt: true,
   avatar: true,
   owner:   { select: USER_BRIEF_SELECT },
-  members: { select: { role: true, user: { select: USER_BRIEF_SELECT } } },
+  assignees: { select: { role: true, user: { select: USER_BRIEF_SELECT } } },
 } as const;

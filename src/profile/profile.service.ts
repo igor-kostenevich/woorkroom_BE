@@ -9,6 +9,8 @@ import { StorageService } from 'src/storage/storage.service';
 import { toPublicRef } from './../utils/to-public-ref.util';
 import { FileRef } from 'src/storage/common/file-ref';
 import { UserProfileResponse } from './dto/responses/profile.dto';
+import { ProfileProjectResponse } from './dto/responses/profile-project.response';
+import { mapUserBrief } from '../projects/mappers/project.mapper';
 
 const ALLOWED = /^(image\/jpeg|image\/png|image\/webp|image\/gif)$/;
 
@@ -130,7 +132,7 @@ export class ProfileService {
     const memberships = await this.prismaService.projectMember.findMany({
       where: {
         project: {
-          members: {
+          assignees: {
             some: { userId },
           },
         },
@@ -151,7 +153,9 @@ export class ProfileService {
     const map = new Map<string, any>();
   
     for (const member of memberships) {
-      map.set(member.user.id, member.user);
+      if (member.user) {
+        map.set(member.user.id, member.user);
+      }
     }
   
     return Array.from(map.values()).map(u => ({
@@ -163,7 +167,76 @@ export class ProfileService {
       avatar: toPublicRef(u.avatar),
     }));
   }
-  
-  
+
+  async getProjects(userId: string): Promise<ProfileProjectResponse[]> {
+    const projects = await this.prismaService.project.findMany({
+      where: {
+        OR: [
+          { ownerId: userId },
+          { assignees: { some: { userId } } },
+        ],
+      },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        avatar: true,
+        priority: true,
+        createdAt: true,
+        assignees: {
+          select: {
+            role: true,
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const results: ProfileProjectResponse[] = [];
+
+    for (const project of projects) {
+      let avatar: any = null;
+      
+      if (project.avatar) {
+        const avatarData = project.avatar as any;
+        if (avatarData.name && !avatarData.url) {
+          avatar = { name: avatarData.name };
+        } else if (avatarData.url) {
+          let ref = avatarData as FileRef;
+          if (ref && !ref.public) {
+            ref = await this.storage.refreshUrl(ref, 300);
+          }
+          avatar = toPublicRef(ref);
+        }
+      }
+
+      const assignees = project.assignees.map((a: any) => ({
+        role: a.role,
+        user: mapUserBrief(a.user),
+      }));
+
+      results.push({
+        id: project.id,
+        code: project.code,
+        name: project.name,
+        avatar,
+        priority: project.priority,
+        createdAt: project.createdAt,
+        allTasksCount: 0, // TODO: add tasks count
+        activeTasksCount: 0, // TODO: add active tasks count
+        assignees,
+      });
+    }
+
+    return plainToInstance(ProfileProjectResponse, results);
+  }
 
 }

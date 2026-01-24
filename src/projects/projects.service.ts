@@ -47,25 +47,25 @@ export class ProjectsService {
         deadline: dto.deadline ? new Date(dto.deadline) : null,
         ownerId: user.id,
         avatar,
-        members: { create: { userId: user.id, role: ProjectRole.OWNER } },
+        assignees: { create: { userId: user.id, role: ProjectRole.OWNER } },
       },
       select: PROJECT_SELECT,
     });
 
     return plainToInstance(
       ProjectResponse,
-      mapProjectRowToResponse(row, user.id, ProjectRole.OWNER),
+      mapProjectRowToResponse(row),
     );
   }
 
   async list(user: User): Promise<ProjectResponse[]> {
     const rows = await this.prisma.project.findMany({
-      where: { members: { some: { userId: user.id } } },
+      where: { assignees: { some: { userId: user.id } } },
       orderBy: { createdAt: 'desc' },
       select: PROJECT_SELECT,
     });
 
-    const mapped = rows.map(r => mapProjectRowToResponse(r, user.id, ProjectRole.VIEWER));
+    const mapped = rows.map(r => mapProjectRowToResponse(r));
     return plainToInstance(ProjectResponse, mapped);
   }
 
@@ -76,12 +76,12 @@ export class ProjectsService {
     });
     if (!row) throw new NotFoundException('Project not found');
 
-    const resp = mapProjectRowToResponse(row, user.id, ProjectRole.VIEWER);
-    if (!this.isAdmin(user) && !resp.myRole) {
+    const hasAccess = this.isAdmin(user) || (row.assignees as any[]).some((a: any) => a.user.id === user.id);
+    if (!hasAccess) {
       throw new ForbiddenException('No access to this project');
     }
     
-    return plainToInstance(ProjectResponse, resp);
+    return plainToInstance(ProjectResponse, mapProjectRowToResponse(row));
   }
 
   async update(user: User, id: string, dto: UpdateProjectDto): Promise<ProjectResponse> {
@@ -97,10 +97,24 @@ export class ProjectsService {
       name: dto.name ?? undefined,
       description: dto.description ?? undefined,
       priority: (dto.priority as any) ?? undefined,
-      startDate: dto.startDate ? new Date(dto.startDate) : undefined,
       deadline: dto.deadline ? new Date(dto.deadline) : undefined,
     };
     if (dto.avatar) dataPatch.avatar = { name: dto.avatar.trim() };
+    
+    if (dto.assignees !== undefined) {
+      await this.prisma.projectMember.deleteMany({
+        where: { projectId: id },
+      });
+      
+      if (dto.assignees.length > 0) {
+        dataPatch.assignees = {
+          create: dto.assignees.map(a => ({
+            userId: a.userId,
+            role: a.role,
+          })),
+        };
+      }
+    }
 
     const row = await this.prisma.project.update({
       where: { id },
@@ -110,7 +124,7 @@ export class ProjectsService {
 
     return plainToInstance(
       ProjectResponse,
-      mapProjectRowToResponse(row, user.id, ProjectRole.OWNER),
+      mapProjectRowToResponse(row),
     );
   }
 }

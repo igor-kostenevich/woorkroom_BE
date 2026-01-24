@@ -17,14 +17,9 @@ export function mapUserBrief(u: any) {
   return { ...u, avatar: toPublicRef(u?.avatar) };
 }
 
-export function getMyRole(members: Array<{ role: ProjectRole; user: { id: string } }>, userId: string, fallback: ProjectRole) {
-  return members.find(m => m.user.id === userId)?.role ?? fallback;
-}
-
-export function mapProjectRowToResponse(row: any, userId: string, fallback: ProjectRole): ProjectResponse {
+export function mapProjectRowToResponse(row: any): ProjectResponse {
   const owner = mapUserBrief(row.owner);
-  const members = row.members.map((m: any) => ({ role: m.role, user: mapUserBrief(m.user) }));
-  const myRole = getMyRole(members, userId, fallback);
+  const assignees = row.assignees.map((m: any) => ({ role: m.role, user: mapUserBrief(m.user) }));
 
   return {
     id: row.id,
@@ -38,7 +33,6 @@ export function mapProjectRowToResponse(row: any, userId: string, fallback: Proj
     updatedAt: row.updatedAt,
     avatar: toPublicRef(row.avatar),
     owner,
-    members,
-    myRole,
+    assignees,
   };
 }

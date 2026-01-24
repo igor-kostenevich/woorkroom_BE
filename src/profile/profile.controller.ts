@@ -10,6 +10,7 @@ import { User } from '@prisma/client';
 import { UpdateProfileRequest } from './dto/updateProfile.dto';
 import { UserProfileResponse } from './dto/responses/profile.dto';
 import { ProfileTeamMemberResponse } from './dto/responses/profile-team.response';
+import { ProfileProjectResponse } from './dto/responses/profile-project.response';
 
 
 @UseInterceptors(ClassSerializerInterceptor)
@@ -89,5 +90,26 @@ export class ProfileController {
     @Authorized() user: User,
   ): Promise<ProfileTeamMemberResponse[]> {
     return this.profileService.getTeam(user.id);
+  }
+
+  @Authorization()
+  @Get('projects')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get user projects',
+    description:
+      'Returns all projects where the user is either owner or member.',
+  })
+  @ApiOkResponse({
+    description: 'List of user projects',
+    type: ProfileProjectResponse,
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  async getProjects(
+    @Authorized() user: User,
+  ): Promise<ProfileProjectResponse[]> {
+    return this.profileService.getProjects(user.id);
   }
 }

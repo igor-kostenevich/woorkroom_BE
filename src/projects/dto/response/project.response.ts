@@ -33,14 +33,11 @@ export class ProjectResponse {
   owner!: ProjectUserBriefDto;
 
   @ApiProperty({ type: () => [ProjectMemberDto] })
-  members!: ProjectMemberDto[];
+  assignees!: ProjectMemberDto[];
 
   @ApiProperty({ type: Date })
   createdAt!: Date;
 
   @ApiProperty({ type: Date })
   updatedAt!: Date;
-
-  @ApiProperty({ enum: ProjectRole, enumName: 'ProjectMemberRole', example: ProjectRole.OWNER })
-  myRole!: ProjectRole;
 }
