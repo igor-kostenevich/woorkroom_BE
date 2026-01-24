@@ -23,6 +23,7 @@ enum VacationStatus {
   PENDING
   APPROVED
   REJECTED
+  CANCELED
 }
 
 enum ProjectPriority {

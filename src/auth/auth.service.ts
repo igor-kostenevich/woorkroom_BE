@@ -161,7 +161,10 @@ export class AuthService {
   }
 
   async validate(id: string) {
-    const user = await this.prismaService.user.findUnique({ where: { id }, select: { id: true } })
+    const user = await this.prismaService.user.findUnique({ 
+      where: { id }, 
+      select: { id: true, role: true } 
+    })
     if(!user) throw new NotFoundException('User not found')
     return user
   }
