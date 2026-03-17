@@ -11,6 +11,7 @@ import { TelegramModule } from './telegram/telegram.module';
 import { MailModule } from './mail/mail.module';
 import { ProfileModule } from './profile/profile.module';
 import { EmployeesModule } from './employees/employees.module';
+import { DevToolsModule } from './dev-tools/dev-tools.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { EmployeesModule } from './employees/employees.module';
     MailModule,
     ProfileModule,
     EmployeesModule,
+    DevToolsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
