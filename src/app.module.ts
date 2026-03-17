@@ -10,6 +10,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { MailModule } from './mail/mail.module';
 import { ProfileModule } from './profile/profile.module';
+import { EmployeesModule } from './employees/employees.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ProfileModule } from './profile/profile.module';
     TelegramModule,
     MailModule,
     ProfileModule,
+    EmployeesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
